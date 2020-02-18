@@ -2,15 +2,16 @@
 
 set -eu
 
+# Not running in connect.kak
 if [ -z "${KAKOUNE_SESSION:-}" ] || [ -z "${KAKOUNE_CLIENT-}" ]
-then # Not running in connect.kak
+then
   exec mv "$@"
 fi
 
 # Running in connect.kak
 # Separate flags from file args
 flags=''
-for arg do
+for arg; do
   case $arg in
     --) shift; break ;;
     -*) flags="$flags $arg"; shift ;;
@@ -19,7 +20,7 @@ for arg do
 done
 
 # Get the last arg, the mv target
-for target do :; done
+for target; do :; done
 
 # Remove last arg from $@
 # $@ is now just the list of files to copy
@@ -70,7 +71,7 @@ filebuffer() {
 }
 
 # Look at each file being moved, see if it's open in a kak buffer.
-for file do
+for file; do
   # realpath's are used to canonicalize comparisons
   filepath=$(realpath "$file")
 

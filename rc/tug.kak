@@ -1,5 +1,5 @@
-define-command mv -override -params 1.. -file-completion -docstring %{
-  Move the current file and rename the buffer.
+define-command mv -params 1.. -file-completion -docstring %{
+  Move the current file and rename the buffer
 
      mv [flags] target_file
      mv [flags] target_directory
@@ -28,12 +28,12 @@ define-command mv -override -params 1.. -file-completion -docstring %{
 
     echo delete-buffer
     [ -d "$target" ] && target="${target}/${kak_buffile##*/}"
-    printf 'edit %s\n' "${target}"
+    printf "edit '%s'\n" "${target}"
   }
 }
 
-define-command cp -override -params 1.. -file-completion -docstring %{
-  Copy the current file.
+define-command cp -params 1.. -file-completion -docstring %{
+  Copy the current file
 
      cp [flags] target_file
      cp [flags] target_directory
@@ -59,14 +59,14 @@ define-command cp -override -params 1.. -file-completion -docstring %{
   }
 }
 
-define-command mkdir -override -params .. -file-completion -docstring %{
-  Make directories.
+define-command mkdir -params .. -file-completion -docstring %{
+  Make directories
 
      mkdir [flags]
      mkdir [flags] directory_name ...
 
   With no arguments, create directories for the current buffer.
-  All arguments are forwarded to `mkdir`.
+  All flags are forwarded to `mkdir`.
 } %{
   evaluate-commands %sh{
     if [ $# -eq 0 ]
@@ -78,14 +78,14 @@ define-command mkdir -override -params .. -file-completion -docstring %{
   }
 }
 
-define-command chmod -override -params 1.. -file-completion -docstring %{
-  Change file modes or Access Control Lists.
+define-command chmod -params 1.. -file-completion -docstring %{
+  Change file modes or Access Control Lists
 
      chmod [flags] mode
      chmod [flags] mode file ...
 
   If no file is provided, modifies the current file.
-  All arguments are forwarded to `chmod`.
+  All flags are forwarded to `chmod`.
 } %{
   evaluate-commands %sh{
     # Get the last arg
@@ -100,14 +100,14 @@ define-command chmod -override -params 1.. -file-completion -docstring %{
   }
 }
 
-define-command rm -override -params .. -file-completion -docstring %{
-  Remove directory entries.
+define-command rm -params .. -file-completion -docstring %{
+  Remove directory entries
 
      rm [flags]
      rm [flags] file ...
 
   If no file is provided, removes the current file and buffer.
-  All arguments are forwarded to `rm`
+  All flags are forwarded to `rm`
 } %{
   write
   evaluate-commands %sh{
