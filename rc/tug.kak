@@ -1,5 +1,5 @@
 define-command mv -override -params 1.. -file-completion -docstring %{
-  Move the current file and renames the buffer.
+  Move the current file and rename the buffer.
 
      mv [flags] target_file
      mv [flags] target_directory
@@ -66,7 +66,7 @@ define-command mkdir -override -params .. -file-completion -docstring %{
      mkdir [flags] directory_name ...
 
   With no arguments, create directories for the current buffer.
-  Otherwise, all arguments are forwarded to `mkdir`.
+  All arguments are forwarded to `mkdir`.
 } %{
   evaluate-commands %sh{
     if [ $# -eq 0 ]
@@ -103,11 +103,11 @@ define-command chmod -override -params 1.. -file-completion -docstring %{
 define-command rm -override -params .. -file-completion -docstring %{
   Remove directory entries.
 
-     rm [flags] file ...
      rm [flags]
+     rm [flags] file ...
 
-  If no file is provided, removes the current file.
-  All arguments are forwarded to `chmod`.
+  If no file is provided, removes the current file and buffer.
+  All arguments are forwarded to `rm`
 } %{
   write
   evaluate-commands %sh{
