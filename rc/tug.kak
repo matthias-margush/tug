@@ -1,6 +1,13 @@
 define-command mv -override -params 1.. -file-completion -docstring %{
-  Move the current file
+  Move the current file and renames the buffer.
+
+     mv [flags] target_file
+     mv [flags] target_directory
+
+  All flags are forwarded to `mv`.
+  Synchronizes buffers with file system changes.
 } %{
+  write
   evaluate-commands %sh{
     # Get the last arg
     for target; do :; done
@@ -9,24 +16,29 @@ define-command mv -override -params 1.. -file-completion -docstring %{
     i=1; while [ $i -lt $# ]; do
       set -- "$@" "$1"
       shift
-      i=$(($i+1))
+      i=$((i+1))
     done
     shift
 
     if ! mv "$@" "$kak_buffile" "$target"
     then
-      printf "fail Failed to move file (see *debug*)"
+      echo "fail Failed to move file (see *debug*)"
       exit 1
     fi
 
-    printf '%s\n' delete-buffer
+    echo delete-buffer
     [ -d "$target" ] && target="${target}/${kak_buffile##*/}"
     printf 'edit %s\n' "${target}"
   }
 }
 
 define-command cp -override -params 1.. -file-completion -docstring %{
-  Copy the current file
+  Copy the current file.
+
+     cp [flags] target_file
+     cp [flags] target_directory
+
+  All flags are forwarded to `cp`.
 } %{
   evaluate-commands %sh{
     # Get the last arg
@@ -36,19 +48,25 @@ define-command cp -override -params 1.. -file-completion -docstring %{
     i=1; while [ $i -lt $# ]; do 
       set -- "$@" "$1"
       shift
-      i=$(($i+1))
+      i=$((i+1))
     done
     shift
 
     if ! cp "$@" "$kak_buffile" "$target"
     then
-      printf "fail Failed to copy file (see *debug*)"
+      echo "fail Failed to copy file (see *debug*)"
     fi
   }
 }
 
 define-command mkdir -override -params .. -file-completion -docstring %{
-  Make directories
+  Make directories.
+
+     mkdir [flags]
+     mkdir [flags] directory_name ...
+
+  With no arguments, create directories for the current buffer.
+  Otherwise, all arguments are forwarded to `mkdir`.
 } %{
   evaluate-commands %sh{
     if [ $# -eq 0 ]
@@ -61,7 +79,13 @@ define-command mkdir -override -params .. -file-completion -docstring %{
 }
 
 define-command chmod -override -params 1.. -file-completion -docstring %{
-  Change file modes or Access Control Lists
+  Change file modes or Access Control Lists.
+
+     chmod [flags] mode
+     chmod [flags] mode file ...
+
+  If no file is provided, modifies the current file.
+  All arguments are forwarded to `chmod`.
 } %{
   evaluate-commands %sh{
     # Get the last arg
@@ -77,8 +101,15 @@ define-command chmod -override -params 1.. -file-completion -docstring %{
 }
 
 define-command rm -override -params .. -file-completion -docstring %{
-  Remove directory entries
+  Remove directory entries.
+
+     rm [flags] file ...
+     rm [flags]
+
+  If no file is provided, removes the current file.
+  All arguments are forwarded to `chmod`.
 } %{
+  write
   evaluate-commands %sh{
     # Get the last arg
     for target; do :; done
@@ -87,6 +118,7 @@ define-command rm -override -params .. -file-completion -docstring %{
     then
       rm "$@"
     else
+      echo delete-buffer
       rm "$@" "$kak_buffile"
     fi
   }
