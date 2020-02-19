@@ -5,7 +5,7 @@ set -eu
 # Not running in connect.kak
 if [ -z "${KAKOUNE_SESSION:-}" ] || [ -z "${KAKOUNE_CLIENT-}" ]
 then
-  exec mv "$@"
+  exec /bin/mv "$@"
 fi
 
 # Running in connect.kak
@@ -33,18 +33,18 @@ shift
 
 # There should be at least one source file.
 # If not, run mv with original args to show usage message.
-if [ "$1" = "" ]
+if [ $# -eq 0 ]
 then
-  # shellcheck disable=SC2086
-  exec mv $flags -- "$@" "$target"
+  # shellcheck disable=SC2086 # expand $flags
+  exec /bin/mv $flags -- "$@" "$target"
 fi
 
 # If there are multiple sources, and the target is not a directory,
 # print usage.
 if [ $# -gt 1 ] && [ ! -d "$target" ]
 then
-  # shellcheck disable=SC2086
-  exec mv $flags -- "$@" "$target"
+  # shellcheck disable=SC2086 # expand $flags
+  exec /bin/mv $flags -- "$@" "$target"
 fi
 
 # Move files that are open in kak
@@ -56,54 +56,54 @@ active_buffile=$(get '%val{buffile}')
 active_bufpath=$(realpath "$active_buffile")
 targetpath=$(realpath "$target")
 
-# Returns a list of buffers with a matching name
-filebuffer() {
-  file="${1##*/}"
-  buffers="$2"
-  for buffer in $buffers
+# Synchronize the kak buffer, if there is one
+# Returns 0 if there was, otherwise 1
+sync_kak_buffer() {
+  filepath=$(realpath "$1")
+  filename="${filepath##*/}"
+  shift
+
+  for buf
   do
-    bufferfile="${buffer##*/}"
-    if [ "$file" = "$bufferfile" ]
-    then
-      printf "%s\n" "$buffer"
+    buffilename="${buf##*/}"
+    if [ "$filename" = "$buffilename" ]
+    then # probably the same file (files have same name)
+      buffer "$buf" # Make active buffer
+      buffile=$(get '%val{buffile}')
+      bufpath=$(realpath "$buffile")
+
+      if [ "$bufpath" = "$filepath" ]
+      then # Same file
+        send "mv $flags '$targetpath'"
+
+        if [ "$bufpath" = "$active_bufpath" ]
+        then # The original active buffer was moved
+          active_bufname=$(get '%val{bufname}')
+          active_buffile=$(get '%val{buffile}')
+          active_bufpath=$(realpath "$active_buffile")
+        fi
+
+        return 0
+      fi
     fi
   done
+
+  return 1 # not found
 }
 
 # Look at each file being moved, see if it's open in a kak buffer.
 for file; do
-  # realpath's are used to canonicalize comparisons
-  filepath=$(realpath "$file")
-
-  # See if the file is one of the kak buffers
-  for b in $(filebuffer "$filepath" "$(buffer)")
-  do
-    buffer "$b" # Make active buffer
-    buffile=$(get '%val{buffile}')
-    bufpath=$(realpath "$buffile")
-
-    if [ "$bufpath" = "$filepath" ]
-    then # File is open in kak
-      send "mv $flags '$targetpath'"
-
-      if [ "$bufpath" = "$active_bufpath" ]
-      then # The original active buffer was moved
-        active_bufname=$(get '%val{bufname}')
-        active_buffile=$(get '%val{buffile}')
-        active_bufpath=$(realpath "$active_buffile")
-      fi
-
-      shift
-      break
-    fi
-  done
+  if eval sync_kak_buffer "'$file'" "$(get '%val{buflist}')"
+  then
+    shift
+  fi
 done
 
 # Move files that are not open in kak
 if [ $# -gt 0 ]
 then
-  # shellcheck disable=SC2086
-  mv $flags -- "$@" "$target"
+  # shellcheck disable=SC2086 # expand $flags
+  /bin/mv $flags -- "$@" "$target"
 fi
 
 # Make the originally active buffer active again
