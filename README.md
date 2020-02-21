@@ -4,50 +4,30 @@
 # Shell Commands For The [Kakoune](https://kakoune.org) Editor
 
 #### :mv
-    Move the current file and rename the buffer
 
-        mv [flags] target_file
-        mv [flags] target_directory
+  Move the current file and rename the buffer
 
-    All flags are forwarded to `mv`.
-    Synchronizes buffers with file system changes.
-
+  Usage: mv TARGET
 
 #### :cp
-    Copy the current file
 
-        cp [flags] target_file
-        cp [flags] target_directory
+  Copy the current file
 
-    All flags are forwarded to `cp`.
+  Usage: cp TARGET
 
 #### :mkdir
-    Make directories
 
-        mkdir [flags]
-        mkdir [flags] directory_name ...
-
-    With no arguments, create directories for the current buffer.
-    All flags are forwarded to `mkdir`.
+  Make directories for the current buffer
 
 #### :chmod
-    Change file modes or Access Control Lists
 
-        chmod [flags] mode
-        chmod [flags] mode file ...
+  Change file modes or Access Control Lists
 
-    If no file is provided, modifies the current file.
-    All flags are forwarded to `chmod`.
+  Usage: chmod MODE
 
 #### :rm
-    Remove directory entries
 
-        rm [flags]
-        rm [flags] file ...
-
-    If no file is provided, removes the current file and buffer.
-    All flags are forwarded to `chmod`.
-
+  Remove the current file and buffer
 
 ## [Connect.kak](https://github.com/alexherbo2/connect.kak) Integration
 

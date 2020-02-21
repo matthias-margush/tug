@@ -1,110 +1,106 @@
 #!/bin/sh
 
-set -eu
+set -e
+
+mv "$@"
+result=$?
 
 # Not running in connect.kak
-if [ -z "${KAKOUNE_SESSION:-}" ] || [ -z "${KAKOUNE_CLIENT-}" ]
+if [ "$result" -ne 0 ]||
+   [ -z "$KAKOUNE_SESSION" ] ||
+   [ -z "$KAKOUNE_CLIENT" ] ||
+   [ -z "$KAKOUNE_CONNECT_PATH" ] ||
+   ! [ -e "$KAKOUNE_CONNECT_PATH/functions/prelude.sh" ]
 then
-  exec /bin/mv "$@"
+  exit $result
 fi
 
-# Running in connect.kak
-# Separate flags from file args
-flags=''
-for arg; do
+# Running in kak: the rest of the script will synchronize open buffers that were moved
+
+# This provides kak_escape
+# shellcheck disable=SC1090
+. "$KAKOUNE_CONNECT_PATH/functions/prelude.sh"
+
+# Discard flags, then $@ is the list of files
+for arg
+do
   case $arg in
     --) shift; break ;;
-    -*) flags="$flags $arg"; shift ;;
+    -*) shift ;;
     *)  break ;;
   esac
 done
 
-# Get the last arg, the mv target
+# Canonicalize filenames
+for file
+do
+  path=$(realpath "$file")
+  set -- "$@" "$path"
+  shift
+done
+
+# Get details of the active buffer in each kak client, to restore it later
 for target; do :; done
 
-# Remove last arg from $@
-# $@ is now just the list of files to copy
-i=1; while [ $i -lt $# ]; do
-  set -- "$@" "$1"
-  shift
-  i=$((i+1))
-done
-shift
+# Construct two parallel lists:
+# - client_list: list of kak clients fur the current session
+# - active_buffiles: visible buffers
+client_list=$(get '%val{client_list}')
+active_buffiles=''
+for client in $client_list
+do
+  active_buffile=$(KAKOUNE_CLIENT="$client" get '%val{buffile}')
 
-# There should be at least one source file.
-# If not, run mv with original args to show usage message.
-if [ $# -eq 0 ]
-then
-  # shellcheck disable=SC2086 # expand $flags
-  exec /bin/mv $flags -- "$@" "$target"
-fi
-
-# If there are multiple sources, and the target is not a directory,
-# print usage.
-if [ $# -gt 1 ] && [ ! -d "$target" ]
-then
-  # shellcheck disable=SC2086 # expand $flags
-  exec /bin/mv $flags -- "$@" "$target"
-fi
-
-# Move files that are open in kak
-# (Note: connect.kak provides a `realpath`.)
-
-# Get details of the active buffer, to restore it later
-active_bufname=$(get '%val{bufname}')
-active_buffile=$(get '%val{buffile}')
-active_bufpath=$(realpath "$active_buffile")
-targetpath=$(realpath "$target")
-
-# Synchronize the kak buffer, if there is one
-# Returns 0 if there was, otherwise 1
-sync_kak_buffer() {
-  filepath=$(realpath "$1")
-  filename="${filepath##*/}"
-  shift
-
-  for buf
-  do
-    buffilename="${buf##*/}"
-    if [ "$filename" = "$buffilename" ]
-    then # probably the same file (files have same name)
-      buffer "$buf" # Make active buffer
-      buffile=$(get '%val{buffile}')
-      bufpath=$(realpath "$buffile")
-
-      if [ "$bufpath" = "$filepath" ]
-      then # Same file
-        send "mv $flags '$targetpath'"
-
-        if [ "$bufpath" = "$active_bufpath" ]
-        then # The original active buffer was moved
-          active_bufname=$(get '%val{bufname}')
-          active_buffile=$(get '%val{buffile}')
-          active_bufpath=$(realpath "$active_buffile")
-        fi
-
-        return 0
+  i=1; while [ $i -lt $# ] # Loop over all but the last arg (target)
+  do # Check whether the active buffer is one that was renamed.
+    file="$1"
+    if [ "$file" = "$active_buffile" ]
+    then # This mv source file is a displayed buffer
+      # Change active_buffile to the file's new name
+      if [ -d "$target" ]
+      then 
+        active_buffile="$target/$active_buffile"
+      else
+        active_buffile="$target"
       fi
     fi
+    set -- "$@" "$1"; shift
+    i=$((i+1))
   done
+  set -- "$@" "$1"; shift
 
-  return 1 # not found
-}
-
-# Look at each file being moved, see if it's open in a kak buffer.
-for file; do
-  if eval sync_kak_buffer "'$file'" "$(get '%val{buflist}')"
-  then
-    shift
-  fi
+  # Add this client's active buffer to the list
+  # Newline separate the buffers
+  active_buffiles=$(printf '%s\n%s' "$active_buffiles" "$active_buffile")
 done
 
-# Move files that are not open in kak
-if [ $# -gt 0 ]
-then
-  # shellcheck disable=SC2086 # expand $flags
-  /bin/mv $flags -- "$@" "$target"
-fi
+# Escape filenames to send to kak
+for file
+do
+  escaped_path=$(kak_escape "$file")
+  set -- "$@" "$escaped_path"
+  shift
+done
 
-# Make the originally active buffer active again
-buffer "$active_bufname"
+# Send off the list of paths to sync with open buffers
+printf 'evaluate-commands -buffer * tug-mv-sync %s' "$*" | kak -p "$KAKOUNE_SESSION"
+
+# Now need to make the previously active buffers active again
+
+# Clear out the arg array, repopulate with active buffer list
+for arg; do shift; done
+IFS='
+'
+for file in $active_buffiles
+do
+  set -- "$@" "$file"
+done
+
+# Update each client's active buffer to the newly renamed files
+send delete-buffer # appears to apply to all clients
+IFS=' '
+for client in $client_list
+do
+  file="$1"; shift
+  KAKOUNE_CLIENT="$client" edit "$file"
+done
