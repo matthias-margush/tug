@@ -1,4 +1,4 @@
-define-command mv -override -params 1 -file-completion -docstring %{
+define-command mv -params 1 -file-completion -docstring %{
   Move the current file and rename the buffer
 
   Usage: mv TARGET
@@ -18,7 +18,7 @@ define-command mv -override -params 1 -file-completion -docstring %{
 }
 
 # Synchronize buffer with a mv command (called by bin/tmv)
-define-command tug-mv-sync -override -hidden -params .. %{
+define-command tug-mv-sync -hidden -params .. %{
   evaluate-commands %sh{
     if ! command -v realpath 2>/dev/null >/dev/null
     then
@@ -53,7 +53,24 @@ define-command tug-mv-sync -override -hidden -params .. %{
   }
 }
 
-define-command cp -override -params 1.. -file-completion -docstring %{
+define-command rename -params 1 -file-completion -docstring %{
+  Rename the current buffer and file
+} %{
+  write
+  evaluate-commands %sh{
+    dir=$(dirname "$kak_buffile")
+    target="$dir/$1"
+    if ! mv "$kak_buffile" "$target"
+    then
+      fail "Failed to rename file (see *debug*)"
+    fi
+
+    echo delete-buffer
+    printf "edit '%s'\n" "$target"
+  }
+}
+
+define-command cp -params 1 -file-completion -docstring %{
   Copy the current file
 
   Usage: cp TARGET
@@ -67,7 +84,7 @@ define-command cp -override -params 1.. -file-completion -docstring %{
   }
 }
 
-define-command mkdir -override -params .. -file-completion -docstring %{
+define-command mkdir -params 1 -file-completion -docstring %{
   Make directories for the current buffer
 } %{
   evaluate-commands %sh{
@@ -78,7 +95,7 @@ define-command mkdir -override -params .. -file-completion -docstring %{
   }
 }
 
-define-command chmod -override -params 1 -file-completion -docstring %{
+define-command chmod -params 1 -file-completion -docstring %{
   Change file modes or Access Control Lists
 
   Usage: chmod MODE
@@ -91,7 +108,7 @@ define-command chmod -override -params 1 -file-completion -docstring %{
   }
 }
 
-define-command rm -override -params .. -file-completion -docstring %{
+define-command rm -file-completion -docstring %{
   Remove the current file and buffer
 } %{
   evaluate-commands %sh{
