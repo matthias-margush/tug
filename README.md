@@ -4,7 +4,7 @@
 
 **`:mv [target]`** - Move the current file and rename the buffer
 
-**`:rm`** - Rename the current buffer and file
+**`:rename [target]`** - Rename the current file (keeping it in the same directory)
 
 **`:cp [target]`** - Copy the current file
 
