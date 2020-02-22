@@ -46,9 +46,8 @@ define-command tug-mv-sync -override -hidden -params .. %{
       source=$(realpath "$1"); shift
       if [ "$source" = "$buffile" ]
       then
-         echo delete-buffer
-         printf 'echo -debug Editing %s\n' "$target"
-         printf "edit %s\n" "$target"
+         printf "delete-buffer '%s'\n" "$buffile"
+         printf "edit '%s'\n" "$target"
       fi
     done
   }

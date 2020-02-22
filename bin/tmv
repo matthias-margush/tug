@@ -58,11 +58,14 @@ do
     then # This mv source file is a displayed buffer
       # Change active_buffile to the file's new name
       if [ -d "$target" ]
-      then 
+      then
+        active_buffile="${active_buffile##*/}"
         active_buffile="$target/$active_buffile"
       else
         active_buffile="$target"
       fi
+    else
+      active_buffile='.'
     fi
     set -- "$@" "$1"; shift
     i=$((i+1))
@@ -77,13 +80,14 @@ done
 # Escape filenames to send to kak
 for file
 do
-  escaped_path=$(kak_escape "$file")
+  # escaped_path=$(kak_escape "$file")
+  escaped_path=$(echo "$file" | sed -e "s/'/'\\\\''/g; 1s/^/'/; \$s/\$/'/")
   set -- "$@" "$escaped_path"
   shift
 done
 
 # Send off the list of paths to sync with open buffers
-printf 'evaluate-commands -buffer * tug-mv-sync %s' "$*" | kak -p "$KAKOUNE_SESSION"
+kak_escape evaluate-commands -buffer \* tug-mv-sync "$*" | kak -p "$KAKOUNE_SESSION"
 
 # Now need to make the previously active buffers active again
 
@@ -97,10 +101,14 @@ do
 done
 
 # Update each client's active buffer to the newly renamed files
-send delete-buffer # appears to apply to all clients
 IFS=' '
 for client in $client_list
 do
   file="$1"; shift
-  KAKOUNE_CLIENT="$client" edit "$file"
+  # file=$(kak_escape "$file")
+  # KAKOUNE_CLIENT="$client" send delete-buffer
+  if [ "$file" != '.' ]
+  then
+    KAKOUNE_CLIENT="$client" edit "$file"
+  fi
 done
