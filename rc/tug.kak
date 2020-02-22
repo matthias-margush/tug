@@ -33,7 +33,7 @@ define-command tug-mv-sync -hidden -params .. %{
     # Get the target file/directory
     for target; do :; done
 
-    # If the taret is a directory, the file was moved
+    # If the target is a directory, the file was moved into it
     [ -d "$target" ] && target="${target}/${kak_buffile##*/}"
 
     # Canonicalize paths
