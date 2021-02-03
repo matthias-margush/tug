@@ -84,7 +84,7 @@ define-command cp -params 1 -file-completion -docstring %{
   }
 }
 
-define-command mkdir -params 1 -file-completion -docstring %{
+define-command mkdir -docstring %{
   Make directories for the current buffer
 } %{
   evaluate-commands %sh{
